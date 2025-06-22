@@ -1,0 +1,25 @@
+[install]
+# Always install exact versions
+exact = true
+
+# Tell Bun to use the lockb file format
+lockfile = "bun.lockb"
+
+# Auto install dependencies when importing
+auto = true
+
+[run]
+# Use ES modules
+module = "module"
+
+[test]
+# Run TypeScript tests
+extensions = [".ts", ".tsx"]
+
+[debug]
+# Always break on errors
+break-on-error = true
+
+[build]
+# Set target to bun for node builtins
+target = "bun"
