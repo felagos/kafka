@@ -1,37 +1,44 @@
-import { connectAll, sendMessage, subscribeToTopic, disconnectAll } from './kafka-client.ts';
+import { connectAll, subscribeToTopic, disconnectAll } from './kafka-client.ts';
 
 async function main() {
   try {
+    console.log('Connecting to Kafka...');
     // Connect to Kafka
     await connectAll();
     
     // Define the topic
     const topic = 'test-topic';
     
+    console.log(`Subscribing to topic: ${topic}`);
     // Subscribe to the topic
     await subscribeToTopic(topic, (message) => {
       console.log('Processed message:', message);
     });
     
-    // Send a test message
-    setTimeout(async () => {
-      await sendMessage(topic, { text: 'Hello Kafka!', timestamp: new Date().toISOString() });
-    }, 1000);
-    
-    // Keep the application running for a while to receive messages
+    // Keep the application running and handle graceful shutdown
     console.log('Waiting for messages...');
     
-    // Disconnect after 10 seconds (just for this example)
-    setTimeout(async () => {
-      console.log('Disconnecting...');
+    // Handle graceful shutdown
+    process.on('SIGINT', async () => {
+      console.log('Received SIGINT. Gracefully shutting down...');
       await disconnectAll();
       process.exit(0);
-    }, 10000);
+    });
+    
+    process.on('SIGTERM', async () => {
+      console.log('Received SIGTERM. Gracefully shutting down...');
+      await disconnectAll();
+      process.exit(0);
+    });
     
   } catch (error) {
     console.error('Error in main function:', error);
+    await disconnectAll().catch(e => console.error('Error disconnecting:', e));
     process.exit(1);
   }
 }
 
-main();
+main().catch(error => {
+  console.error('Unhandled error:', error);
+  process.exit(1);
+});

@@ -12,8 +12,12 @@ const kafka = new Kafka({
 // Create a producer
 const producer = kafka.producer();
 
-// Create a consumer
-const consumer = kafka.consumer({ groupId: 'test-group' });
+// Create a consumer with better rebalancing strategy
+const consumer = kafka.consumer({ 
+  groupId: 'test-group',
+  sessionTimeout: 30000, // Increase session timeout to handle rebalancing better
+  heartbeatInterval: 5000 // More frequent heartbeats
+});
 
 // Function to connect both producer and consumer
 async function connectAll() {
@@ -55,7 +59,7 @@ async function subscribeToTopic(topic: string, callback: (message: any) => void)
     // Subscribe to the topic
     await consumer.subscribe({ topic, fromBeginning: true });
     
-    // Start consuming messages
+    // Start consuming messages with rebalancing event handlers
     await consumer.run({
       eachMessage: async ({ topic, partition, message }) => {
         const value = message.value?.toString();
@@ -69,6 +73,23 @@ async function subscribeToTopic(topic: string, callback: (message: any) => void)
           }
         }
       },
+      // Add rebalancing event handlers
+      autoCommit: true,
+      partitionsConsumedConcurrently: 1
+    });
+    
+    // Handle rebalance events
+    consumer.on(consumer.events.GROUP_JOIN, ({ payload }) => {
+      console.log('Consumer group joined:', payload);
+    });
+    
+    consumer.on(consumer.events.REBALANCING, () => {
+      console.log('Consumer group rebalancing...');
+    });
+    
+    consumer.on(consumer.events.HEARTBEAT, () => {
+      // Uncomment for debugging if needed
+      // console.log('Consumer heartbeat');
     });
     
     console.log(`Subscribed to topic ${topic}`);
@@ -81,9 +102,13 @@ async function subscribeToTopic(topic: string, callback: (message: any) => void)
 // Function to disconnect both producer and consumer
 async function disconnectAll() {
   try {
+    console.log('Starting producer disconnect...');
     await producer.disconnect();
     console.log('Producer disconnected');
     
+    console.log('Starting consumer disconnect...');
+    // Add a small delay to ensure producer disconnection completes
+    await new Promise(resolve => setTimeout(resolve, 1000));
     await consumer.disconnect();
     console.log('Consumer disconnected');
   } catch (error) {
