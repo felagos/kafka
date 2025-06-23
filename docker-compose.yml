@@ -45,12 +45,24 @@ services:
       KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
     networks:
       - kafka-network
-
   kafka-client:
     build:
       context: ./client
       dockerfile: Dockerfile
     container_name: kafka-client
+    restart: unless-stopped
+    depends_on:
+      - kafka
+    environment:
+      - KAFKA_BROKER=kafka:9092
+    networks:
+      - kafka-network
+
+  kafka-producer:
+    build:
+      context: ./client
+      dockerfile: Dockerfile.producer
+    container_name: kafka-producer
     restart: unless-stopped
     depends_on:
       - kafka
