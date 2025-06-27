@@ -79,7 +79,7 @@ export class KafkaConnection {
       await this.producer.send({
         topic,
         messages: [
-          { value: typeof message === 'string' ? message : JSON.stringify(message) },
+          { value: typeof message === 'object' ? JSON.stringify(message) : String(message) },
         ],
       });
       console.log(`Message sent to topic ${topic}`);
