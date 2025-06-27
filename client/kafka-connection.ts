@@ -1,11 +1,12 @@
-import { Kafka, Producer, Consumer } from 'kafkajs';
+import { Kafka, Producer, Consumer, Admin, Partitioners } from 'kafkajs';
 
 export class KafkaConnection {
   private kafka!: Kafka;
   private producer!: Producer;
   private consumer!: Consumer;
+  private admin!: Admin;
 
-  createConnection(
+  async createConnection(
     clientId: string = 'my-app',
     groupId: string = 'test-group',
     brokerAddress: string = process.env.KAFKA_BROKER || 'localhost:29092'
@@ -13,35 +14,68 @@ export class KafkaConnection {
     this.kafka = new Kafka({
       clientId,
       brokers: [brokerAddress],
+      retry: {
+        initialRetryTime: 100,
+        retries: 8
+      }
     });
 
-    this.producer = this.kafka.producer();
+    this.producer = this.kafka.producer({
+      createPartitioner: Partitioners.LegacyPartitioner
+    });
     this.consumer = this.kafka.consumer({
       groupId,
-      sessionTimeout: 30000,
-      heartbeatInterval: 5000
+      sessionTimeout: 6000,
+      heartbeatInterval: 1000
     });
+    this.admin = this.kafka.admin();
 
-    return this;
+    await this.connectProducerAndAdmin();
   }
 
-  async connectAll() {
+  private async connectProducerAndAdmin() {
     try {
+      console.log('Connecting to Kafka admin...');
+      await this.admin.connect();
+      console.log('Admin connected successfully');
+
+      console.log('Connecting to Kafka producer...');
       await this.producer.connect();
       console.log('Producer connected successfully');
 
-      await this.consumer.connect();
-      console.log('Consumer connected successfully');
-
-      return { producer: this.producer, consumer: this.consumer };
     } catch (error) {
       console.error('Error connecting to Kafka:', error);
       throw error;
     }
   }
 
-  async sendMessage(topic: string, message: any) {
+  async createTopicIfNotExists(topicName: string, numPartitions: number = 1, replicationFactor: number = 1) {
     try {
+      const topics = await this.admin.listTopics();
+      if (!topics.includes(topicName)) {
+        console.log(`Creating topic: ${topicName}`);
+        await this.admin.createTopics({
+          topics: [{
+            topic: topicName,
+            numPartitions,
+            replicationFactor
+          }]
+        });
+        console.log(`Topic ${topicName} created successfully`);
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      } else {
+        console.log(`Topic ${topicName} already exists`);
+      }
+    } catch (error) {
+      console.error(`Error creating topic ${topicName}:`, error);
+      throw error;
+    }
+  }
+
+  async sendMessage<T>(topic: string, message: T) {
+    try {
+      await this.createTopicIfNotExists(topic);
+      
       await this.producer.send({
         topic,
         messages: [
@@ -96,16 +130,37 @@ export class KafkaConnection {
 
   async disconnectAll() {
     try {
+      console.log('Starting admin disconnect...');
+      await this.admin.disconnect();
+      console.log('Admin disconnected');
+
       console.log('Starting producer disconnect...');
       await this.producer.disconnect();
       console.log('Producer disconnected');
 
-      console.log('Starting consumer disconnect...');
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      await this.consumer.disconnect();
-      console.log('Consumer disconnected');
+      try {
+        console.log('Starting consumer disconnect...');
+        await this.consumer.disconnect();
+        console.log('Consumer disconnected');
+      } catch (error) {
+        console.log('Consumer was not connected, skipping disconnect');
+      }
     } catch (error) {
       console.error('Error disconnecting from Kafka:', error);
+      throw error;
+    }
+  }
+
+  async connectConsumer() {
+    try {
+      if (!this.consumer) {
+        throw new Error('Consumer not initialized. Call createConnection first.');
+      }
+      console.log('Connecting to Kafka consumer...');
+      await this.consumer.connect();
+      console.log('Consumer connected successfully');
+    } catch (error) {
+      console.error('Error connecting consumer:', error);
       throw error;
     }
   }
