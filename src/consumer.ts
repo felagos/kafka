@@ -1,13 +1,25 @@
 import { KafkaConsumer } from "./kafka-consumer";
 
-const kafkaConnection = new KafkaConsumer();
+const runConsumer = async () => {
+    const kafkaConnection = new KafkaConsumer();
 
-await kafkaConnection.createConnection();
+    try {
+        await kafkaConnection.createConnection();
 
-kafkaConnection.subscribeToTopic('test-topic', (message) => {
-    console.log('Received message:', JSON.stringify(message, null, 2));
-})
+        kafkaConnection.subscribeToTopic('test-topic', (message) => {
+            console.log('Received message:', JSON.stringify(message, null, 2));
+        })
 
-await kafkaConnection.disconnect();
+        await kafkaConnection.disconnect();
 
-process.exit(0);
+        process.exit(0);
+    } catch (error) {
+        console.error('Consumer failed:', error);
+        process.exit(1);
+    } finally {
+        await kafkaConnection.disconnect();
+    }
+
+}
+
+runConsumer();
