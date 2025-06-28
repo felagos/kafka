@@ -50,32 +50,30 @@ export class KafkaConnection {
   }
 
   async createTopicIfNotExists(topicName: string, numPartitions: number = 1, replicationFactor: number = 1) {
-    try {
-      const topics = await this.admin.listTopics();
-      if (!topics.includes(topicName)) {
-        console.log(`Creating topic: ${topicName}`);
-        await this.admin.createTopics({
-          topics: [{
-            topic: topicName,
-            numPartitions,
-            replicationFactor
-          }]
-        });
-        console.log(`Topic ${topicName} created successfully`);
-        await new Promise(resolve => setTimeout(resolve, 2000));
-      } else {
-        console.log(`Topic ${topicName} already exists`);
-      }
-    } catch (error) {
-      console.error(`Error creating topic ${topicName}:`, error);
-      throw error;
+    const topics = await this.admin.listTopics();
+    
+    if (!topics.includes(topicName)) {
+      console.log(`Creating topic: ${topicName}`);
+      await this.admin.createTopics({
+        topics: [{
+          topic: topicName,
+          numPartitions,
+          replicationFactor
+        }]
+      });
+
+      console.log(`Topic ${topicName} created successfully`);
+      
+      await new Promise(resolve => setTimeout(resolve, 2000));
+    } else {
+      console.log(`Topic ${topicName} already exists`);
     }
   }
 
   async sendMessage<T>(topic: string, message: T) {
     try {
       await this.createTopicIfNotExists(topic);
-      
+
       await this.producer.send({
         topic,
         messages: [
