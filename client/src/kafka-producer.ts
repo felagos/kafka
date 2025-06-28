@@ -1,14 +1,12 @@
-import { Kafka, Producer, Consumer, Admin, Partitioners } from 'kafkajs';
+import { Kafka, Producer, Admin, Partitioners } from 'kafkajs';
 
-export class KafkaConnection {
+export class KafkaProducer {
   private kafka!: Kafka;
   private producer!: Producer;
-  private consumer!: Consumer;
   private admin!: Admin;
 
   async createConnection(
-    clientId: string = 'my-app',
-    groupId: string = 'test-group',
+    clientId: string = 'my-app-producer',
     brokerAddress: string = process.env.KAFKA_BROKER || 'localhost:29092'
   ) {
     this.kafka = new Kafka({
@@ -22,11 +20,6 @@ export class KafkaConnection {
 
     this.producer = this.kafka.producer({
       createPartitioner: Partitioners.LegacyPartitioner
-    });
-    this.consumer = this.kafka.consumer({
-      groupId,
-      sessionTimeout: 6000,
-      heartbeatInterval: 1000
     });
     this.admin = this.kafka.admin();
 
@@ -87,46 +80,7 @@ export class KafkaConnection {
     }
   }
 
-  async subscribeToTopic(topic: string, callback: (message: any) => void) {
-    try {
-      await this.consumer.subscribe({ topic, fromBeginning: true });
-
-      await this.consumer.run({
-        eachMessage: async ({ topic, partition, message }) => {
-          const value = message.value?.toString();
-          console.log(`Received message from topic ${topic}: ${value}`);
-          if (value && callback) {
-            try {
-              const parsedValue = JSON.parse(value);
-              callback(parsedValue);
-            } catch {
-              callback(value);
-            }
-          }
-        },
-        autoCommit: true,
-        partitionsConsumedConcurrently: 1
-      });
-
-      this.consumer.on(this.consumer.events.GROUP_JOIN, ({ payload }) => {
-        console.log('Consumer group joined:', payload);
-      });
-
-      this.consumer.on(this.consumer.events.REBALANCING, () => {
-        console.log('Consumer group rebalancing...');
-      });
-
-      this.consumer.on(this.consumer.events.HEARTBEAT, () => {
-      });
-
-      console.log(`Subscribed to topic ${topic}`);
-    } catch (error) {
-      console.error('Error subscribing to topic:', error);
-      throw error;
-    }
-  }
-
-  async disconnectAll() {
+  async disconnect() {
     try {
       console.log('Starting admin disconnect...');
       await this.admin.disconnect();
@@ -135,30 +89,8 @@ export class KafkaConnection {
       console.log('Starting producer disconnect...');
       await this.producer.disconnect();
       console.log('Producer disconnected');
-
-      try {
-        console.log('Starting consumer disconnect...');
-        await this.consumer.disconnect();
-        console.log('Consumer disconnected');
-      } catch (error) {
-        console.log('Consumer was not connected, skipping disconnect');
-      }
     } catch (error) {
       console.error('Error disconnecting from Kafka:', error);
-      throw error;
-    }
-  }
-
-  async connectConsumer() {
-    try {
-      if (!this.consumer) {
-        throw new Error('Consumer not initialized. Call createConnection first.');
-      }
-      console.log('Connecting to Kafka consumer...');
-      await this.consumer.connect();
-      console.log('Consumer connected successfully');
-    } catch (error) {
-      console.error('Error connecting consumer:', error);
       throw error;
     }
   }
@@ -167,7 +99,7 @@ export class KafkaConnection {
     return this.producer;
   }
 
-  getConsumer(): Consumer {
-    return this.consumer;
+  getAdmin(): Admin {
+    return this.admin;
   }
 }

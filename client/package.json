@@ -7,10 +7,7 @@
   "engines": {
     "bun": ">=1.0.0"
   },  "scripts": {
-    "build": "bun build ./client.ts --outdir ./dist --target bun",
-    "build:producer": "bun build ./client-producer.ts --outdir ./dist-producer --target bun",
-    "start": "bun run client.ts",
-    "start:producer": "bun run client-producer.ts"
+    "start:producer": "bun run src/producer.ts"
   },
   "dependencies": {
     "kafkajs": "^2.2.4"

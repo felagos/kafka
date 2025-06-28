@@ -1,6 +1,6 @@
-import { KafkaConnection } from "./kafka-connection";
+import { KafkaProducer } from "./kafka-producer";
 
-const kafkaConnection = new KafkaConnection();
+const kafkaConnection = new KafkaProducer();
 
 await kafkaConnection.createConnection();
 
@@ -10,4 +10,4 @@ await kafkaConnection.sendMessage('test-topic', {
     message: 'Hello from producer!'
 });
 
-kafkaConnection.disconnectAll();
+await kafkaConnection.disconnect();
