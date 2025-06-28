@@ -4,6 +4,8 @@ const kafkaConnection = new KafkaProducer();
 
 await kafkaConnection.createConnection();
 
+await kafkaConnection.createTopicIfNotExists('test-topic');
+
 await kafkaConnection.sendMessage('test-topic', {
     key: 'value',
     timestamp: new Date().toISOString(),

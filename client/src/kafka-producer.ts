@@ -65,8 +65,6 @@ export class KafkaProducer {
 
   async sendMessage<T>(topic: string, message: T) {
     try {
-      await this.createTopicIfNotExists(topic);
-
       await this.producer.send({
         topic,
         messages: [
