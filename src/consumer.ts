@@ -6,9 +6,11 @@ const runConsumer = async () => {
     try {
         await kafkaConnection.createConnection();
 
-        kafkaConnection.subscribeToTopic('test-topic', (message) => {
-            console.log('Received message:', JSON.stringify(message, null, 2));
-        })
+        await kafkaConnection.subscribeToTopic('test-topic', async (message) => {
+            console.log('Processing message:', JSON.stringify(message, null, 2));
+            // Process your message here
+            // The offset will only be committed after this callback completes successfully
+        }, { fromBeginning: true, manualCommit: true });
 
         await kafkaConnection.disconnect();
 

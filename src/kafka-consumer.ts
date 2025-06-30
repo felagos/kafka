@@ -39,9 +39,14 @@ export class KafkaConsumer {
     }
   }
 
-  async subscribeToTopic(topic: string, callback: (message: any) => void) {
+  async subscribeToTopic(topic: string, callback: (message: any) => void, options: {
+    fromBeginning?: boolean;
+    manualCommit?: boolean;
+  } = {}) {
+    const { fromBeginning = true, manualCommit = false } = options;
+    
     try {
-      await this.consumer.subscribe({ topic, fromBeginning: true });
+      await this.consumer.subscribe({ topic, fromBeginning });
 
       await this.consumer.run({
         eachMessage: async ({ topic, partition, message }) => {
@@ -50,13 +55,25 @@ export class KafkaConsumer {
           if (value && callback) {
             try {
               const parsedValue = JSON.parse(value);
-              callback(parsedValue);
+              await callback(parsedValue);
             } catch {
-              callback(value);
+              await callback(value);
+            }
+            
+            // Manual commit after successful processing
+            if (manualCommit) {
+              await this.consumer.commitOffsets([
+                {
+                  topic,
+                  partition,
+                  offset: (parseInt(message.offset) + 1).toString()
+                }
+              ]);
+              console.log(`Manually committed offset ${message.offset} for topic ${topic}`);
             }
           }
         },
-        autoCommit: true,
+        autoCommit: !manualCommit,
         partitionsConsumedConcurrently: 1
       });
 
