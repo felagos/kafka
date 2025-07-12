@@ -7,7 +7,7 @@ export class KafkaProducer {
 
   async createConnection(
     clientId: string = 'my-app-producer',
-    brokerAddress: string = process.env.KAFKA_BROKERS || 'localhost:29092,localhost:29093'
+    brokerAddress: string = process.env.KAFKA_BROKERS || 'localhost:29092,localhost:29093,localhost:29094'
   ) {
     this.kafka = new Kafka({
       clientId,
