@@ -7,11 +7,11 @@ export class KafkaConsumer {
   async createConnection(
     clientId: string = 'my-app-consumer',
     groupId: string = 'test-group',
-    brokerAddress: string = process.env.KAFKA_BROKER || 'localhost:29092'
+    brokerAddress: string = process.env.KAFKA_BROKERS || 'localhost:29092,localhost:29093'
   ) {
     this.kafka = new Kafka({
       clientId,
-      brokers: [brokerAddress],
+      brokers: brokerAddress.split(','),
       retry: {
         initialRetryTime: 100,
         retries: 8

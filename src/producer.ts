@@ -8,7 +8,7 @@ async function runProducer() {
     
     await kafkaConnection.createConnection();
     
-    await kafkaConnection.createTopicIfNotExists('test-topic');
+    await kafkaConnection.createTopicIfNotExists('test-topic', 2, 2);
 
     await kafkaConnection.sendMessage('test-topic', {
         key: 'value',
