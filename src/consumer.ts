@@ -5,21 +5,15 @@ const runConsumer = async () => {
 
     try {
         await kafkaConnection.createConnection();
+         await kafkaConnection.connect();
 
         await kafkaConnection.subscribeToTopic('test-topic', async (message) => {
             console.log('Processing message:', JSON.stringify(message, null, 2));
-            // Process your message here
-            // The offset will only be committed after this callback completes successfully
-        }, { fromBeginning: true, manualCommit: true });
+        }, { fromBeginning: true, });
 
         await kafkaConnection.disconnect();
-
-        process.exit(0);
     } catch (error) {
         console.error('Consumer failed:', error);
-        process.exit(1);
-    } finally {
-        await kafkaConnection.disconnect();
     }
 
 }
