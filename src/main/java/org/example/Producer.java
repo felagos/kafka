@@ -1,6 +1,6 @@
 package org.example;
 
-public class Main {
+public class Producer {
     public static void main(String[] args) {
         var message = new Message("Hello", "This is a test message");
         
