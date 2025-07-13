@@ -5,6 +5,11 @@ public class Producer {
         var message = new Message("Hello", "This is a test message");
         
         var producerConnection = new KafkaProducerConnection();
-        producerConnection.sendMessage("demo_java", message);
+        try {
+            producerConnection.sendMessage("demo_java", message);
+            System.out.println("Message sent successfully!");
+        } finally {
+            producerConnection.close();
+        }
     }
 }

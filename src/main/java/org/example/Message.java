@@ -4,6 +4,10 @@ public class Message {
     private String title;
     private String content;
 
+    // Default constructor for Jackson deserialization
+    public Message() {
+    }
+
     public Message(String title, String content) {
         this.title = title;
         this.content = content;
@@ -13,8 +17,15 @@ public class Message {
         return title;
     }
 
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
     public String getContent() {
         return content;
     }
 
+    public void setContent(String content) {
+        this.content = content;
+    }
 }
