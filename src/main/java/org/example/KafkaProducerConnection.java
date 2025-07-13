@@ -26,7 +26,7 @@ public class KafkaProducerConnection {
         properties.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         properties.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
         properties.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
-        properties.put(ProducerConfig.ACKS_CONFIG, "1");
+        properties.put(ProducerConfig.ACKS_CONFIG, "all");
         return properties;
     }
 
